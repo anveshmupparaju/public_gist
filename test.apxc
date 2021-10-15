@@ -1,0 +1,86 @@
+@isTest private class TestCESuperUserTrigger {
+    static Marketing_Location_HF__c testData(String state){
+        Marketing_Location_HF__c ce = new Marketing_Location_HF__c(Name = 'Test CE', 
+                                                                   Event_Status__c = state, 
+                                                                   Event_Start_Date__c = System.today().addDays(1), 
+                                                                   Event_End_Date__c = System.today().addDays(3), 
+                                                                   Event_Start_Time__c = System.now().time(), 
+                                                                   s_this_Virtual_Event__c = 'No', 
+                                                                   Event_Venue__c = 'Test Venue', 
+                                                                   Event_Street_Address__c = 'Test Street', 
+                                                                   Event_County__c = 'Bronx', 
+                                                                   Event_City__c = 'Test City', 
+                                                                   Marketing_Site_Zip_Code_HF__c = '90011'); 
+        return ce;
+    }
+    
+    @isTest static void TestCESuperUserCEEventUpdateDraftTrigger(){
+        Marketing_Location_HF__c ce = testData('Draft');
+        
+        insert ce;
+        
+        Test.startTest(); 
+        ce.Event_Start_Date__c = System.today().addDays(2); 
+        Database.SaveResult resChangeDate = Database.update(ce, false); 
+        Test.stopTest();
+        System.assertEquals(true, resChangeDate.isSuccess());
+    }
+    
+    @isTest static void TestCESuperUserCEEventUpdateApprovedTrigger(){
+        Marketing_Location_HF__c ce = testData('Approved');
+        
+        insert ce;
+        
+        Test.startTest(); 
+        ce.Event_Start_Date__c = System.today().addDays(2); 
+        Database.SaveResult resChangeDate = Database.update(ce, false); 
+        Test.stopTest();
+        System.assertEquals(false, resChangeDate.isSuccess());
+        System.assert(resChangeDate.getErrors().size() > 0);
+        System.assertEquals('You are allowed to Edit while the record is in Draft/Pending state',
+                            resChangeDate.getErrors()[0].getMessage()); 
+    }
+    
+    @isTest static void TestCESuperUserCEEventUpdatePendingDate(){
+        Marketing_Location_HF__c ce = testData('Pending');
+        
+        insert ce;
+        
+        Test.startTest(); 
+        ce.Event_Start_Date__c = System.today().addDays(2); 
+        Database.SaveResult resChangeDate = Database.update(ce, false); 
+        Test.stopTest();
+        System.assertEquals(false, resChangeDate.isSuccess());
+        System.assert(resChangeDate.getErrors().size() > 0);
+        System.assertEquals('You are not allowed to Edit Event Location and Schedule details while the record is in Pending state',
+                            resChangeDate.getErrors()[0].getMessage()); 
+    }
+    
+    @isTest static void TestCESuperUserCEEventUpdatePendingLocation(){
+        Marketing_Location_HF__c ce = testData('Pending');
+        
+        insert ce;
+        
+        Test.startTest(); 
+        ce.Event_City__c = 'CA'; 
+        Database.SaveResult resChangeLocation = Database.update(ce, false); 
+        Test.stopTest();
+        System.assertEquals(false, resChangeLocation.isSuccess());
+        System.assert(resChangeLocation.getErrors().size() > 0);
+        System.assertEquals('You are not allowed to Edit Event Location and Schedule details while the record is in Pending state',
+                            resChangeLocation.getErrors()[0].getMessage()); 
+    }
+    
+    @isTest static void TestCESuperUserCEEventUpdatePendingName(){
+        Marketing_Location_HF__c ce = testData('Pending');
+        
+        insert ce;
+        
+        Test.startTest(); 
+        ce.Name = 'Test CE 2'; 
+        Database.SaveResult resChangeName = Database.update(ce, false); 
+        Test.stopTest();
+        
+        System.assertEquals(true, resChangeName.isSuccess());
+    }
+}
